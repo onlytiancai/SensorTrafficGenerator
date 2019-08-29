@@ -9,6 +9,7 @@ import csv
 import glob
 import signal
 import wave, struct
+import paho.mqtt.client as mqtt
 import threading
 
 MTU=1300
@@ -30,7 +31,20 @@ def usage():
 
 HOST = "127.0.0.1"
 PORT = 1883
+client = mqtt.Client()
+client.connect(HOST, PORT, 60)
 
+class MyThread(threading.Thread):
+    def __init__(self, client):
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.client = client
+
+    def run(self):
+    	self.client.loop_forever()
+
+t = MyThread(client)	
+t.start()
 
 def sensor_send(message, ipaddr, port):
     '''
@@ -211,6 +225,7 @@ def main(argv):
         message["data_size"]=str(len(str(val)))
         message["sensor_data"]=str(val)
 
+        client.publish(sensor_type, str(message), 2)
         sensor_send(str(message), ip, port)
         #print timeout
         
